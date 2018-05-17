@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Rust!</title>
+</head>
+<body>
+	<h3>Chat!</h3>
+	<div>
+		<button id="connect">Connect</button> | Status: <span id="status">disconnected</span>
+	</div>
+	<div id="log" style="width:20em;height:15em;overflow:auto;border:1px solid black"></div>
+	<form id="chatform" name="chatform" onsubmit="return false;">
+		<input id="text" type="text"> <input id="send" type="button" value="Send">
+	</form>
+	<script type="text/javascript">
+	 var conn = null;
+	 
+	 function log(msg) {
+	   var control = document.getElementById('log');
+	   control.innerHTML = control.innerHTML + msg + '<br/>';
+	   control.scrollTop = control.scrollTop + 1000;
+	 }
+	 
+	 function connect() {
+	   disconnect();
+	   var wsUri = (window.location.protocol == 'https:' && 'wss://' || 'ws://') + window.location.host + '/ws/';
+	   conn = new WebSocket(wsUri);
+	   log('Connecting...');
+	   conn.onopen = function() {
+	     log('Connected.');
+	     update_ui();
+	   };
+	   conn.onmessage = function(e) {
+	     log('Received: ' + e.data);
+	   };
+	   conn.onclose = function() {
+	     log('Disconnected.');
+	     conn = null;
+	     update_ui();
+	   };
+	 }
+	 
+	 function disconnect() {
+	   if (conn != null) {
+	     log('Disconnecting...');
+	     conn.close();
+	     conn = null;
+	     update_ui();
+	   }
+	 }
+	 
+	 function update_ui() {
+	   var msg = '';
+	   if (conn == null) {
+	     document.getElementById('status').innerText = 'disconnected';
+	     document.getElementById('connect').innerHTML = 'Connect';
+	   } else {
+	     document.getElementById('status').innerText = 'connected (' + conn.protocol + ')';
+	     document.getElementById('connect').innerHTML = 'Disconnect';
+	   }
+	 }
+	 document.getElementById('connect').onclick = function() {
+	   if (conn == null) connect();
+	   else disconnect();
+	   update_ui();
+	   return false;
+	 };
+	 document.getElementById('send').onclick = function() {
+	   var text = document.getElementById('text').value;
+	   log('Sending: ' + text);
+	   conn.send(text);
+	   document.getElementById('text').value = '';
+	   document.getElementById('text').focus();
+	   return false;
+	 };
+	 document.getElementById('text').onkeyup = function(e) {
+	   if (e.keyCode === 13) {
+	     document.getElementById('send').onclick();
+	     return false;
+	   }
+	 };
+	</script>
+</body>
+</html>
